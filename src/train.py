@@ -9,7 +9,7 @@ from cntk.ops import *
 import dataloader
 import model
 import hyperparameters as hp
-import uploadresult
+import helper
 
 dataloader.load()
 train_file = "data/MNIST/Train-28x28_cntk_text.txt"
@@ -57,49 +57,50 @@ def save_metrics(trainer, filename):
     f = open(filename, 'w')
     f.write("Loss: {0:.4f}, Error: {1:.2f}%".format(training_loss, eval_error*100))
 
-input = input_variable((hp.input_dim), np.float32)
-z = model.get(input)
-label = input_variable((hp.num_output_classes), np.float32)
+def get_trainer(model):
 
-#cost function
-loss = cross_entropy_with_softmax(z, label)
-
-#compute accuracy
-label_error = classification_error(z, label)
-
-# Instantiate the trainer object to drive the model training
-lr_schedule = learning_rate_schedule(learning_rate, UnitType.minibatch)
-learner = sgd(z.parameters, lr_schedule)
-trainer = Trainer(z, loss, label_error, [learner])
-
-# Initialize the parameters for the trainer
-minibatch_size = 64
-num_samples_per_sweep = 60000
-num_sweeps_to_train_with = 10
-num_minibatches_to_train = (num_samples_per_sweep * num_sweeps_to_train_with) / minibatch_size
-
-# Run the trainer on and perform model training
-training_progress_output_freq = 500
-
-plotdata = {"batchsize":[], "loss":[], "error":[]}
-
-for i in range(0, int(num_minibatches_to_train)):
-    mb = mb_source.next_minibatch(minibatch_size)
+    input = input_variable((hp.input_dim), np.float32)
+    label = input_variable((hp.num_output_classes), np.float32)
     
-    # Specify the input variables mapping in the model to actual minibatch data to be trained
-    arguments = {input: mb[features_si],
-                 label: mb[labels_si]}
-    trainer.train_minibatch(arguments)
-    batchsize, loss, error = print_training_progress(trainer, i, training_progress_output_freq, verbose=1)
-    
-    if not (loss == "NA" or error =="NA"):
-        plotdata["batchsize"].append(batchsize)
-        plotdata["loss"].append(loss)
-        plotdata["error"].append(error)
+    #cost function
+    loss = cross_entropy_with_softmax(model, label)
 
-trainer.save_checkpoint("../output/model")
-save_metrics(trainer, '../output/metrics.txt')
+    #compute accuracy
+    label_error = classification_error(model, label)
 
-uploadresult.upload()
+    # Instantiate the trainer object to drive the model training
+    lr_schedule = learning_rate_schedule(learning_rate, UnitType.minibatch)
+    learner = sgd(z.parameters, lr_schedule)
+    return Trainer(z, loss, label_error, [learner])
 
+
+def train(trainer):
+    # Initialize the parameters for the trainer
+    minibatch_size = 64
+    num_samples_per_sweep = 60000
+    num_sweeps_to_train_with = 10
+    num_minibatches_to_train = (num_samples_per_sweep * num_sweeps_to_train_with) / minibatch_size
+
+    # Run the trainer on and perform model training
+    training_progress_output_freq = 500
+
+    plotdata = {"batchsize":[], "loss":[], "error":[]}
+
+    for i in range(0, int(num_minibatches_to_train)):
+        mb = mb_source.next_minibatch(minibatch_size)
+        
+        # Specify the input variables mapping in the model to actual minibatch data to be trained
+        arguments = {input: mb[features_si],
+                    label: mb[labels_si]}
+        trainer.train_minibatch(arguments)
+        batchsize, loss, error = print_training_progress(trainer, i, training_progress_output_freq, verbose=1)
+        
+        if not (loss == "NA" or error =="NA"):
+            plotdata["batchsize"].append(batchsize)
+            plotdata["loss"].append(loss)
+            plotdata["error"].append(error)
+
+    trainer.save_checkpoint("../output/model")
+    save_metrics(trainer, '../output/metrics.txt')
+    helper.upload_results()
 

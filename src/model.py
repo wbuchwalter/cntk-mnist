@@ -34,4 +34,10 @@ def get(input):
     # Create the fully connected classifier.
     z = fully_connected_classifier_net(scaled_input, hp.num_output_classes, hp.hidden_layers_dim, hp.num_hidden_layers, relu)
     return z
+
+def predict(model, inputData):
+    input = input_variable((hp.input_dim), np.float32)
+    prediction = model.eval({input: inputData})
+    return prediction
+
     
