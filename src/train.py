@@ -1,3 +1,6 @@
+import sys
+import os
+
 from cntk import Trainer, StreamConfiguration, text_format_minibatch_source, learning_rate_schedule, UnitType
 from cntk.learner import sgd
 from cntk.utils import get_train_eval_criterion, get_train_loss
@@ -5,7 +8,8 @@ from cntk.ops import *
 
 import dataloader
 import model
-import hyperparameters
+import hyperparameters as hp
+import uploadresult
 
 dataloader.load()
 train_file = "data/MNIST/Train-28x28_cntk_text.txt"
@@ -21,8 +25,8 @@ feature_stream_name = 'features'
 labels_stream_name = 'labels'
 
 mb_source = text_format_minibatch_source(path, [
-    StreamConfiguration(feature_stream_name, input_dim),
-    StreamConfiguration(labels_stream_name, num_output_classes)])
+    StreamConfiguration(feature_stream_name, hp.input_dim),
+    StreamConfiguration(labels_stream_name, hp.num_output_classes)])
 features_si = mb_source[feature_stream_name]
 labels_si = mb_source[labels_stream_name]
 
@@ -53,8 +57,8 @@ def save_metrics(trainer, filename):
     f = open(filename, 'w')
     f.write("Loss: {0:.4f}, Error: {1:.2f}%".format(training_loss, eval_error*100))
 
-z = model.get()
 input = input_variable((hp.input_dim), np.float32)
+z = model.get(input)
 label = input_variable((hp.num_output_classes), np.float32)
 
 #cost function
@@ -95,5 +99,7 @@ for i in range(0, int(num_minibatches_to_train)):
 
 trainer.save_checkpoint("../output/model")
 save_metrics(trainer, '../output/metrics.txt')
+
+uploadresult.upload()
 
 

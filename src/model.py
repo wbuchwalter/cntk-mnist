@@ -1,10 +1,4 @@
 import cntk
-import numpy as np
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
-import sys
-import os
-
 from cntk.initializer import glorot_uniform
 from cntk.ops import *
 
@@ -34,10 +28,10 @@ def fully_connected_classifier_net(input, num_output_classes, hidden_layer_dim,
     r = linear_layer(h, num_output_classes)
     return r
 
-def get():
+def get(input):
     # Scale the input to 0-1 range by dividing each pixel by 256.
     scaled_input = element_times(constant(1.0 / 256.0), input)
     # Create the fully connected classifier.
-    z = fully_connected_classifier_net(scaled_input, hp.num_output_classes, hhp.idden_layers_dim, hp.num_hidden_layers, relu)
+    z = fully_connected_classifier_net(scaled_input, hp.num_output_classes, hp.hidden_layers_dim, hp.num_hidden_layers, relu)
     return z
     
